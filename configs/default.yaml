@@ -1,0 +1,79 @@
+# ICBHI Respiratory Sound Classifier — Default Configuration
+# Override any field via command-line args in main.py
+
+# ── Data ───────────────────────────────────────────────────────────────────
+data:
+  data_dir: "./data/icbhi_dataset"       # Root of ICBHI dataset
+  sample_rate: 22050
+  cycle_duration: 5.0                    # seconds (pad/truncate all cycles to this)
+  num_workers: 4
+  pin_memory: true
+
+# ── Feature Extraction ─────────────────────────────────────────────────────
+features:
+  n_fft: 512                             # ~23ms window
+  hop_length: 220                        # ~10ms hop
+  n_mels: 128
+  fmin: 50.0
+  fmax: 8000.0
+  hpss_kernel_size: 31                   # HPSS median filter size
+
+# ── Augmentation ───────────────────────────────────────────────────────────
+augmentation:
+  time_stretch_range: [0.8, 1.2]
+  time_stretch_prob: 0.5
+  pitch_shift_range: [-2, 2]
+  pitch_shift_prob: 0.4
+  noise_snr_range: [15, 40]
+  noise_prob: 0.6
+  spec_augment:
+    enabled: true
+    time_mask_param: 30
+    freq_mask_param: 13
+    num_time_masks: 2
+    num_freq_masks: 2
+    prob: 0.8
+
+# ── Model ──────────────────────────────────────────────────────────────────
+model:
+  in_channels: 4
+  n_mels: 128
+  n_classes: 4
+  stem_channels: 32
+  inception_channels: [64, 128, 256]     # one entry per inception block
+  n_inception_blocks: 3
+  attn_heads: 4
+  attn_dropout: 0.1
+  mlp_dropout: 0.4
+
+# ── Training ───────────────────────────────────────────────────────────────
+training:
+  epochs: 100
+  batch_size: 32
+  optimizer: "adamw"                     # adamw | adam | sgd
+  lr: 0.001
+  weight_decay: 0.0001
+  grad_clip: 1.0
+  scheduler: "cosine_warm"              # cosine_warm | cosine | plateau | step
+  cosine_t0: 10
+  eta_min: 0.000001
+  early_stopping_patience: 15
+  use_weighted_sampler: true            # class-balanced batch sampling
+
+# ── Loss ───────────────────────────────────────────────────────────────────
+loss:
+  type: "focal_smooth"                  # focal | focal_smooth | cross_entropy
+  gamma: 2.0
+  smoothing: 0.1
+  use_class_weights: true               # weight by inverse class frequency
+
+# ── Evaluation ─────────────────────────────────────────────────────────────
+evaluation:
+  tta_enabled: true
+  tta_n_augments: 5
+
+# ── Output ─────────────────────────────────────────────────────────────────
+output:
+  checkpoint_dir: "./checkpoints"
+  log_dir: "./logs"
+  results_dir: "./results"
